@@ -1,4 +1,4 @@
-// types.ts
+// Path : src/types.ts
 export type DataItem = {
     annee_publication: string;
     code_departement: string;
