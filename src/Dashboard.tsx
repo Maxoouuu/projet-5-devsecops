@@ -1,94 +1,33 @@
-// Path: src/Dashboard.tsx
+// Dashboard.tsx
 import React, { useState, useEffect } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { parseData } from "./dataUtils";
 import { DataItem } from "./types";
 import SearchForm from "./SearchForm";
-import "./App.css";
-import "./index.css"
-
-// Define the accumulator structure for the regions
-interface RegionAccumulator {
-  [region: string]: {
-    nombre_d_habitants: number;
-    taux_de_chomage_au_t4_en: number;
-    construction: number;
-    count: number;
-  };
-}
-
-// Define the structure of the data we want to display in the charts
-interface AggregatedRegionData {
-  nom_region: string;
-  nombre_d_habitants: number;
-  taux_de_chomage_au_t4_en: number;
-  construction: number;
-}
-
-// Aggregate data by region
-const aggregateDataByRegion = (data: DataItem[]): AggregatedRegionData[] => {
-  const groupedData = data.reduce((acc: RegionAccumulator, item: DataItem) => {
-    const region = item.nom_region || "Unknown"; // Fallback for undefined region names
-    if (!acc[region]) {
-      acc[region] = {
-        nombre_d_habitants: 0,
-        taux_de_chomage_au_t4_en: 0,
-        construction: 0,
-        count: 0,
-      };
-    }
-
-    acc[region].nombre_d_habitants += item.nombre_d_habitants || 0;
-    acc[region].taux_de_chomage_au_t4_en += item.taux_de_chomage_au_t4_en || 0; // Corrected line
-    acc[region].construction += item.construction || 0;
-    acc[region].count += 1;
-
-    return acc;
-  }, {});
-
-  return Object.keys(groupedData).map((region) => {
-    const regionData = groupedData[region];
-    return {
-      nom_region: region,
-      nombre_d_habitants: regionData.nombre_d_habitants,
-      taux_de_chomage_au_t4_en:
-        regionData.taux_de_chomage_au_t4_en / regionData.count,
-      construction: regionData.construction,
-    };
-  });
-};
 
 const Dashboard = () => {
-  const [data, setData] = useState<AggregatedRegionData[]>([]);
-  const [filteredData, setFilteredData] = useState<AggregatedRegionData[]>([]);
+  const [data, setData] = useState<DataItem[]>([]);
+  const [filteredData, setFilteredData] = useState<DataItem[]>([]);
+  const [selectedYear, setSelectedYear] = useState('');
 
   useEffect(() => {
     fetch("logements-et-logements-sociaux-dans-les-departements.csv")
-      .then((response) => response.text())
-      .then((csvString) => {
+      .then(response => response.text())
+      .then(csvString => {
         parseData(csvString, (parsedData) => {
-          // Filter out entries with no region name
-          const validData = parsedData.filter((item) => item.nom_region);
-          const aggregatedData = aggregateDataByRegion(validData);
-          setData(aggregatedData);
-          setFilteredData(aggregatedData);
+          setData(parsedData);
+          setFilteredData(parsedData); // Affiche toutes les données par défaut
         });
       });
   }, []);
 
-  const handleSearch = (searchRegion: string) => {
-    const filtered = data.filter((item) =>
-      item.nom_region?.toLowerCase().includes(searchRegion.toLowerCase())
-    );
-    console.log("Filtered Data:", filtered); // Debug filtered data
+  const handleSearch = (searchYear: string, searchRegion: string) => {
+    setSelectedYear(searchYear);
+    const filtered = data.filter(item => {
+      const yearMatch = searchYear ? item.annee_publication === searchYear : true;
+      const regionMatch = searchRegion ? item.nom_region.toLowerCase().includes(searchRegion.toLowerCase()) : true;
+      return yearMatch && regionMatch;
+    });
     setFilteredData(filtered);
   };
 
@@ -113,11 +52,7 @@ const Dashboard = () => {
       <SearchForm onSearch={handleSearch} />
       <div className="flex flex-wrap justify-around items-center w-full">
         {renderBarChart("nombre_d_habitants", "#8884d8", "Nombre d'habitants")}
-        {renderBarChart(
-          "taux_de_chomage_au_t4_en",
-          "#82ca9d",
-          "Taux de chômage"
-        )}
+        {renderBarChart("taux_de_chomage_au_t4_en", "#82ca9d", "Taux de chômage")}
         {renderBarChart("construction", "#ffc658", "Nombre de constructions")}
       </div>
     </div>

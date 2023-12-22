@@ -1,6 +1,5 @@
-// Path : src/SearchForm.tsx
+// SearchForm.tsx
 import React, { useState } from 'react';
-import './App.css';
 
 type SearchFormProps = {
   onSearch: (year: string, region: string) => void;
@@ -10,16 +9,25 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
   const [searchYear, setSearchYear] = useState('');
   const [searchRegion, setSearchRegion] = useState('');
 
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    onSearch(searchYear, searchRegion);
+  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const year = e.target.value;
+    setSearchYear(year);
+    onSearch(year, searchRegion);
+  };
+
+  const handleRegionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const region = e.target.value;
+    setSearchRegion(region);
+    if (searchYear) {
+      onSearch(searchYear, region);
+    }
   };
 
   return (
-    <form onSubmit={handleSearch} className="flex space-x-2 mb-4">
+    <form className="flex space-x-2 mb-4">
       <select
         value={searchYear}
-        onChange={(e) => setSearchYear(e.target.value)}
+        onChange={handleYearChange}
         className="px-4 py-2 border border-gray-300 rounded"
       >
         <option value="">Année de publication</option>
@@ -33,7 +41,7 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
         type="text"
         placeholder="Nom de région"
         value={searchRegion}
-        onChange={(e) => setSearchRegion(e.target.value)}
+        onChange={handleRegionChange}
         className="px-4 py-2 border border-gray-300 rounded"
       />
       <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300">
