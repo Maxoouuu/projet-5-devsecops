@@ -1,4 +1,4 @@
-// Dashboard.tsx
+// Path: src/Dashboard.tsx
 import React, { useState, useEffect } from "react";
 import {
   BarChart,
@@ -12,6 +12,8 @@ import {
 import { parseData } from "./dataUtils";
 import { DataItem } from "./types";
 import SearchForm from "./SearchForm";
+import "./App.css";
+import "./index.css"
 
 // Define the accumulator structure for the regions
 interface RegionAccumulator {
@@ -33,31 +35,32 @@ interface AggregatedRegionData {
 
 // Aggregate data by region
 const aggregateDataByRegion = (data: DataItem[]): AggregatedRegionData[] => {
-    const groupedData = data.reduce((acc: RegionAccumulator, item: DataItem) => {
-      const region = item.nom_region || "Unknown"; // Fallback for undefined region names
-      if (!acc[region]) {
-        acc[region] = {
-          nombre_d_habitants: 0,
-          taux_de_chomage_au_t4_en: 0,
-          construction: 0,
-          count: 0,
-        };
-      }
-  
-      acc[region].nombre_d_habitants += item.nombre_d_habitants || 0;
-      acc[region].taux_de_chomage_au_t4_en += item.taux_de_chomage_au_t4_en || 0; // Corrected line
-      acc[region].construction += item.construction || 0;
-      acc[region].count += 1;
-  
-      return acc;
-    }, {});
+  const groupedData = data.reduce((acc: RegionAccumulator, item: DataItem) => {
+    const region = item.nom_region || "Unknown"; // Fallback for undefined region names
+    if (!acc[region]) {
+      acc[region] = {
+        nombre_d_habitants: 0,
+        taux_de_chomage_au_t4_en: 0,
+        construction: 0,
+        count: 0,
+      };
+    }
 
-  return Object.keys(groupedData).map(region => {
+    acc[region].nombre_d_habitants += item.nombre_d_habitants || 0;
+    acc[region].taux_de_chomage_au_t4_en += item.taux_de_chomage_au_t4_en || 0; // Corrected line
+    acc[region].construction += item.construction || 0;
+    acc[region].count += 1;
+
+    return acc;
+  }, {});
+
+  return Object.keys(groupedData).map((region) => {
     const regionData = groupedData[region];
     return {
       nom_region: region,
       nombre_d_habitants: regionData.nombre_d_habitants,
-      taux_de_chomage_au_t4_en: regionData.taux_de_chomage_au_t4_en / regionData.count,
+      taux_de_chomage_au_t4_en:
+        regionData.taux_de_chomage_au_t4_en / regionData.count,
       construction: regionData.construction,
     };
   });
@@ -69,12 +72,12 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetch("logements-et-logements-sociaux-dans-les-departements.csv")
-      .then(response => response.text())
-      .then(csvString => {
-        parseData(csvString, parsedData => {
-          console.log("Parsed Data:", parsedData); // Debug parsed data
-          const aggregatedData = aggregateDataByRegion(parsedData);
-          console.log("Aggregated Data:", aggregatedData); // Debug aggregated data
+      .then((response) => response.text())
+      .then((csvString) => {
+        parseData(csvString, (parsedData) => {
+          // Filter out entries with no region name
+          const validData = parsedData.filter((item) => item.nom_region);
+          const aggregatedData = aggregateDataByRegion(validData);
           setData(aggregatedData);
           setFilteredData(aggregatedData);
         });
@@ -82,7 +85,7 @@ const Dashboard = () => {
   }, []);
 
   const handleSearch = (searchRegion: string) => {
-    const filtered = data.filter(item =>
+    const filtered = data.filter((item) =>
       item.nom_region?.toLowerCase().includes(searchRegion.toLowerCase())
     );
     console.log("Filtered Data:", filtered); // Debug filtered data
@@ -106,11 +109,17 @@ const Dashboard = () => {
   );
 
   return (
-    <div>
+    <div className="flex flex-col items-center justify-center p-4">
       <SearchForm onSearch={handleSearch} />
-      {renderBarChart("nombre_d_habitants", "#8884d8", "Nombre d'habitants")}
-      {renderBarChart("taux_de_chomage_au_t4_en", "#82ca9d", "Taux de chômage")}
-      {renderBarChart("construction", "#ffc658", "Nombre de constructions")}
+      <div className="flex flex-wrap justify-around items-center w-full">
+        {renderBarChart("nombre_d_habitants", "#8884d8", "Nombre d'habitants")}
+        {renderBarChart(
+          "taux_de_chomage_au_t4_en",
+          "#82ca9d",
+          "Taux de chômage"
+        )}
+        {renderBarChart("construction", "#ffc658", "Nombre de constructions")}
+      </div>
     </div>
   );
 };
